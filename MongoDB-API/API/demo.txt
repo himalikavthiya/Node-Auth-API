@@ -1,0 +1,38 @@
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    // Find the user by email and verify OTP
+    const user = await checkEmailId(email);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    const otp = generateOTP();
+    const subject = "Password Reset OTP";
+
+    // send mail service is use by email service
+    const mailSent = sendMail(email, { otp }, subject);
+
+    if (!mailSent) {
+      // If email sending fails, handle the error
+      res.status(500).json({
+        success: false,
+        message: "Failed to send email with OTP",
+      });
+    }
+    // Save the OTP in the user document
+    user.otp = otp;
+    await user.save();
+
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: `Check your email for the OTP: ${otp}`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
